@@ -9,6 +9,7 @@ python = "^3.9"
 fastapi = "^0.78.0"
 uvicorn = "^0.17.6"
 python-multipart = "^0.0.5"
+SQLAlchemy = "^1.4.37"
 
 [tool.poetry.dev-dependencies]
 
