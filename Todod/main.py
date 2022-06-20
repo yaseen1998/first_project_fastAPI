@@ -4,6 +4,7 @@ import models
 from typing import Optional
 from sqlalchemy.orm import Session
 from pydantic import BaseModel,Field
+from auth import get_current_user
 
 app = FastAPI()
 
@@ -32,21 +33,34 @@ class Todo(BaseModel):
 async def read_all(db: Session = Depends(get_db)):
     return db.query(models.Todos).all()
 
+
+@app.get("/todo/user")
+async def readd_all_by_user(user:dict = Depends(get_current_user),db: Session = Depends(get_db)):
+    if user is None :
+        raise http_exsception()
+    print(user)
+    return db.query(models.Todos).filter(models.Todos.owner_id == user.get('user_id')).all()
+
 @app.post("/")
-async def create_todo(todo: Todo, db: Session = Depends(get_db)):
+async def create_todo(todo: Todo,user:dict= Depends(get_current_user), db: Session = Depends(get_db)):
+    if user is None :
+        raise http_exsception()
     db_todo = models.Todos()
     db_todo.title = todo.title
     db_todo.completed = todo.completed
     db_todo.description = todo.description
     db_todo.priority = todo.priority
+    db_todo.owner_id = user.get('user_id')
     db.add(db_todo)
     db.commit()
     return {"status":201,"message":"Todo created successfully"}
 
 
 @app.put("/{todo_id}")
-async def update_todo(todo_id: int, todo: Todo, db: Session = Depends(get_db)):
-    db_todo = db.query(models.Todos).get(todo_id)
+async def update_todo(todo_id: int, todo: Todo,user:dict= Depends(get_current_user), db: Session = Depends(get_db)):
+    if user is None :
+        raise http_exsception()
+    db_todo = db.query(models.Todos).filter(models.Todos.owner_id == user.get('user_id') ).filter(models.Todos.id == todo_id).first()
     if not db_todo:
         raise http_exsception()
     db_todo.title = todo.title
@@ -57,8 +71,13 @@ async def update_todo(todo_id: int, todo: Todo, db: Session = Depends(get_db)):
     return {"status":200,"message":"Todo updated successfully"}
 
 @app.delete("/{todo_id}")
-async def delete_todo(todo_id: int, db: Session = Depends(get_db)):
-    db_todo = db.query(models.Todos).get(todo_id)
+async def delete_todo(todo_id: int,user:dict= Depends(get_current_user), db: Session = Depends(get_db)):
+    print(user)
+    if user is None :
+        raise http_exsception()
+    # db_todo = db.query(models.Todos).get(todo_id)
+    db_todo = db.query(models.Todos).filter(models.Todos.owner_id == user.get('user_id') ).filter(models.Todos.id == todo_id).first()
+
     if not db_todo:
         raise http_exsception()
     db.delete(db_todo)
@@ -66,8 +85,10 @@ async def delete_todo(todo_id: int, db: Session = Depends(get_db)):
     return {"status":200,"message":"Todo deleted successfully"}
 
 @app.get("/{id}")
-async def read_one(id: int, db: Session = Depends(get_db)):
-    todo =  db.query(models.Todos).filter(models.Todos.id == id).first()
+async def read_one(id: int,user:dict= Depends(get_current_user), db: Session = Depends(get_db)):
+    if user is None :
+        raise http_exsception()
+    todo =  db.query(models.Todos).filter(models.Todos.id == id).filter(models.Todos.owner_id == user.get('user_id')).first()
     if todo is None:
         raise http_exsception()
     return todo
