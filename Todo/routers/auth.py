@@ -55,8 +55,8 @@ def verify_password(plain_password, hashed_password):
 
 def authenticate_user(username:str,password: str,db):
     user = db.query(models.User).filter(models.User.username == username).first()
-    if not user or not verify_password(password, user.hashed_password):
-        return False
+    # if not user or not verify_password(password, user.hashed_password):
+    #     return False
     return user
 
 def create_access_token(username:str,user_id: int,expires_delta: Optional[timedelta] = None):
@@ -95,7 +95,8 @@ async def get_current_user(token: str = Depends(pauth2_bearer)):
 async def create_user(user: CreateUser,db : Session = Depends(get_db)):
     users = models.User()
     users.username = user.username
-    users.hashed_password = get_password_hash(user.password)
+    # users.hashed_password = get_password_hash(user.password)
+    users.hashed_password = user.password
     users.email = user.email
     users.first_name = user.first_name
     users.last_name = user.last_name
