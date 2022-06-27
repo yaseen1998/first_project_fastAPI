@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "firstfast"
+version = "0.1.0"
+description = ""
+authors = ["yaseen1998 <Yasseenkouthe@ENG.HU.EDU.JO>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.78.0"
+uvicorn = "^0.17.6"
+python-multipart = "^0.0.5"
+SQLAlchemy = "^1.4.37"
+passlib = "^1.7.4"
+python-jose = "^3.3.0"
+psycopg2-binary = "^2.9.3"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
