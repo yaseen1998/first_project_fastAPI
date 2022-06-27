@@ -1,14 +1,24 @@
-from fastapi import FastAPI,Depends,HTTPException
+import sys 
+sys.path.append('..')
+
+
+from fastapi import FastAPI,Depends,HTTPException,APIRouter
 from database import Base,engine,SessionLocal
 import models
 from typing import Optional
 from sqlalchemy.orm import Session
 from pydantic import BaseModel,Field
-from auth import get_current_user
+from .auth import get_current_user
 
-app = FastAPI()
 
+router = APIRouter(
+     prefix="/todos",
+    tags = ["todos"],
+    responses = {404:{'desctiption':'not found'}}
+
+)
 models.Base.metadata.create_all(bind=engine)
+
 
 def get_db():
     try :
@@ -18,7 +28,7 @@ def get_db():
         db.close()
 
 
-# @app.get("/")
+# @router.get("/")
 # async def create_database():
 #     return {"message": "Hello World"}
 
@@ -29,19 +39,19 @@ class Todo(BaseModel):
     priority : int = Field(gt=0, lt=5,description = "Priority must be between 1 and 5")
     # created_at : Optional[str] = Field(description = "Format: YYYY-MM-DD HH:MM:SS")
 
-@app.get("/")
+@router.get("/")
 async def read_all(db: Session = Depends(get_db)):
     return db.query(models.Todos).all()
 
 
-@app.get("/todo/user")
+@router.get("/todo/user")
 async def readd_all_by_user(user:dict = Depends(get_current_user),db: Session = Depends(get_db)):
     if user is None :
         raise http_exsception()
     print(user)
     return db.query(models.Todos).filter(models.Todos.owner_id == user.get('user_id')).all()
 
-@app.post("/")
+@router.post("/")
 async def create_todo(todo: Todo,user:dict= Depends(get_current_user), db: Session = Depends(get_db)):
     if user is None :
         raise http_exsception()
@@ -56,7 +66,7 @@ async def create_todo(todo: Todo,user:dict= Depends(get_current_user), db: Sessi
     return {"status":201,"message":"Todo created successfully"}
 
 
-@app.put("/{todo_id}")
+@router.put("/{todo_id}")
 async def update_todo(todo_id: int, todo: Todo,user:dict= Depends(get_current_user), db: Session = Depends(get_db)):
     if user is None :
         raise http_exsception()
@@ -70,7 +80,7 @@ async def update_todo(todo_id: int, todo: Todo,user:dict= Depends(get_current_us
     db.commit()
     return {"status":200,"message":"Todo updated successfully"}
 
-@app.delete("/{todo_id}")
+@router.delete("/{todo_id}")
 async def delete_todo(todo_id: int,user:dict= Depends(get_current_user), db: Session = Depends(get_db)):
     print(user)
     if user is None :
@@ -84,7 +94,7 @@ async def delete_todo(todo_id: int,user:dict= Depends(get_current_user), db: Ses
     db.commit()
     return {"status":200,"message":"Todo deleted successfully"}
 
-@app.get("/{id}")
+@router.get("/{id}")
 async def read_one(id: int,user:dict= Depends(get_current_user), db: Session = Depends(get_db)):
     if user is None :
         raise http_exsception()
