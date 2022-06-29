@@ -55,8 +55,8 @@ def verify_password(plain_password, hashed_password):
 
 def authenticate_user(username:str,password: str,db):
     user = db.query(models.User).filter(models.User.username == username).first()
-    # if not user or not verify_password(password, user.hashed_password):
-    #     return False
+    if not user or not verify_password(password, user.hashed_password):
+        return False
     return user
 
 def create_access_token(username:str,user_id: int,expires_delta: Optional[timedelta] = None):
