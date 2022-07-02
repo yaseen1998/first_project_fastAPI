@@ -3,7 +3,7 @@ from database import engine
 import models
 
 
-from routers import auth, todos, users
+from routers import auth, todos, users,address
 from company import companyapi,depend
 
 
@@ -11,6 +11,7 @@ app = FastAPI()
 
 models.Base.metadata.create_all(bind=engine)
 
+app.include_router(address.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(todos.router)
