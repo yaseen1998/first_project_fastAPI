@@ -1,7 +1,7 @@
 from re import template
 import sys 
 sys.path.append('..')
-from fastapi import FastAPI , Depends, HTTPException, APIRouter, Request
+from fastapi import FastAPI , Depends, HTTPException, APIRouter, Request,status,Response
 from pydantic import BaseModel
 from typing import Optional
 import models
@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import timedelta, datetime
 from jose import jwt , JWTError
-
+from starlette.responses import RedirectResponse
 
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -114,13 +114,14 @@ async def create_user(user: CreateUser,db : Session = Depends(get_db)):
     return users
 
 @router.post("/token")
-async def login_for_aaccess_token(form_data: OAuth2PasswordRequestForm  = Depends(),db : Session = Depends(get_db)):
+async def login_for_aaccess_token(response:Response,form_data: OAuth2PasswordRequestForm  = Depends(),db : Session = Depends(get_db)):
     user = authenticate_user(form_data.username,form_data.password,db)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    access_token_expires = timedelta(minutes=15)
+    access_token_expires = timedelta(minutes=60)
     access_token = create_access_token(user.username,user.id,expires_delta =   access_token_expires)
-    return {"access_token": access_token, "token_type": "bearer"}
+    response.set_cookie(key="access_token",value=access_token,max_age=access_token_expires,httponly=True)
+    return True
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -129,3 +130,27 @@ async def authpage(request: Request):
 @router.get("/register", response_class=HTMLResponse)
 async def authpage(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
+
+
+class LoginForm:
+    def __init__(self,request: Request):
+        self.request : Request = request
+        self.username : Optional[str] = None
+        self.password : Optional[str] = None
+        
+    async def create_auth_form(self):
+        form = await self.request.form()
+        self.username = form.get("username")
+        self.password = form.get("password")
+        
+@router.post("/", response_class=HTMLResponse)
+async def login(request:Request,db : Session = Depends(get_db)):
+    form = LoginForm(request)
+    await form.create_auth_form()
+    response = RedirectResponse(url="/todos", status_code=status.HTTP_302_FOUND)
+    validate_user_cookie = await login_for_aaccess_token(response,form_data=form,db=db)
+    
+    if validate_user_cookie:
+        return response
+    msg = "Incorrect username or password"
+    return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
