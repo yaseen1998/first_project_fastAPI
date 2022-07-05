@@ -6,3 +6,6 @@ alembic  upgrade "id"
 alembic downgrade -1
 
 
+### fullstack 
+poetry add jinja2
+poetry add aiofiles
